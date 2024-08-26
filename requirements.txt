@@ -1,9 +1,8 @@
-streamlit==1.28.0
-sqlite3
-PyPDF2==3.0.1
-python-docx==0.8.11
-langchain==0.0.184
-langchain-google-genai==0.0.5
-google-generativeai==0.3.1
+streamlit
+PyPDF2
+python-docx
+langchain
+langchain-google-genai
+google-generativeai
 faiss-cpu
-python-dotenv==1.0.0
+python-dotenv
