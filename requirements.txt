@@ -8,4 +8,4 @@ faiss-cpu
 langchain_google_genai
 langchain_community
 docx
-exceptions
+
