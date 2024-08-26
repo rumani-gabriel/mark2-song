@@ -107,7 +107,7 @@ def analyze_song(content):
 def get_playlist_creation_chain():
     prompt_template = """
     Basándote en los temas de las canciones proporcionadas y el tema solicitado por el usuario, 
-    crea una lista de 2 canciones coherente. Selecciona solo las canciones que mejor se ajusten al tema solicitado.
+    crea una lista de 8 canciones coherente. Selecciona solo las canciones que mejor se ajusten al tema solicitado.
     Explica brevemente por qué estas canciones van bien juntas 
     y cómo se relacionan con el tema solicitado.
 
@@ -119,7 +119,7 @@ def get_playlist_creation_chain():
     Lista de reproducción:
     """
 
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash",system_instructions = "Eres un experto en música cristiana, del sector reformado, no catolico. Crees en la soberanía de Dios, entiendes a la biblia como la palabra de Dios y crees en Jesus como el Hijo de DIos que murió en la Cruz y resucito al tercer día. Entiendes que las canciones no deben dibagar en su temática y tienes que poner La Palabra de DIos en lo más alto", temperature=0.6)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash",system_instructions = "Eres un experto en música cristiana, del sector reformado, no catolico. Crees en la soberanía de Dios, entiendes a la biblia como la palabra de Dios y crees en Jesus como el Hijo de Dios que murió en la Cruz y resucitó al tercer día. Entiendes que las canciones no deben dibagar en su temática, ni ser ambiguas, y tienes que poner La Palabra de Dios en lo más alto", temperature=0.6)
     prompt = PromptTemplate(template=prompt_template, input_variables=["user_theme", "context"])    
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
