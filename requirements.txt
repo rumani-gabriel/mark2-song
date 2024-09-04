@@ -8,3 +8,4 @@ faiss-cpu
 python-dotenv
 google-generativeai
 Pillow
+langchain_community
