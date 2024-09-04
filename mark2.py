@@ -80,7 +80,7 @@ def get_docx_text(docx_file):
 # Función para procesar imagen y extraer texto
 def process_image_to_text(image_file):
     image = Image.open(image_file)
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content([
         "Lee la imagen, es una canción que va a tener sus respectivas notas en cifrado americano, donde 'C' es 'DO' y 'B' es 'SI'. Presta atención a palabras como 'INTRO' y lo que sigue porque eso indica dónde y cómo empieza la canción. Generalmente, el formato en que vas a ver las canciones es en dos columnas, de izquierda a derecha. Quiero la canción escrita tal cual la foto, sin agregados.",
         image
@@ -99,7 +99,7 @@ def get_song_analysis_chain():
 
     Tema y análisis:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context"])
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
@@ -131,7 +131,7 @@ def get_playlist_creation_chain():
     """
 
     model = ChatGoogleGenerativeAI(
-        model="gemini-1.5-pro",
+        model="gemini-1.5-flash",
         system_instructions="Eres un experto en música cristiana, del sector reformado, no católico. Crees en la soberanía de Dios, entiendes la Biblia como la palabra de Dios y crees en Jesús como el Hijo de Dios que murió en la Cruz y resucitó al tercer día. Entiendes que las canciones no deben divagar en su temática y tienes que poner La Palabra de Dios en lo más alto",
         temperature=0.4
     )
@@ -203,7 +203,7 @@ def change_song_key(content: str, target_key: str) -> str:
     Canción en la nueva tonalidad de {target_key}:
     """
     
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.2)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
     prompt = PromptTemplate(template=prompt_template, input_variables=["target_key", "context"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     
