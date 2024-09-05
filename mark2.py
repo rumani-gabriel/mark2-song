@@ -80,7 +80,7 @@ def get_docx_text(docx_file):
 # Función para procesar imagen y extraer texto
 def process_image_to_text(image_file):
     image = Image.open(image_file)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-pro')
     response = model.generate_content([
         "Lee la imagen, es una canción que va a tener sus respectivas notas en cifrado americano, donde 'C' es 'DO' y 'B' es 'SI'. Presta atención a palabras como 'INTRO' y lo que sigue porque eso indica dónde y cómo empieza la canción. Generalmente, el formato en que vas a ver las canciones es en dos columnas, de izquierda a derecha. Quiero la canción escrita tal cual la foto, sin agregados.",
         image
@@ -99,7 +99,7 @@ def get_song_analysis_chain():
 
     Tema y análisis:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.3)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context"])
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
@@ -131,7 +131,7 @@ def get_playlist_creation_chain():
     """
 
     model = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-1.5-pro",
         system_instructions="Eres un experto en música cristiana, del sector reformado, no católico. Crees en la soberanía de Dios, entiendes la Biblia como la palabra de Dios y crees en Jesús como el Hijo de Dios que murió en la Cruz y resucitó al tercer día. Entiendes que las canciones no deben divagar en su temática y tienes que poner La Palabra de Dios en lo más alto",
         temperature=0.4
     )
@@ -182,6 +182,7 @@ def display_song_in_columns(song_content, key_prefix):
     with col2:
         st.text_area("Segunda parte:", value='\n'.join(lines[midpoint:]), height=400, key=f"{key_prefix}_col2")
 
+
 def update_song_title(conn, old_name, new_name):
     conn.execute("UPDATE songs SET name = ? WHERE name = ?", (new_name, old_name))
     conn.commit()
@@ -203,7 +204,7 @@ def change_song_key(content: str, target_key: str) -> str:
     Canción en la nueva tonalidad de {target_key}:
     """
     
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.2)
     prompt = PromptTemplate(template=prompt_template, input_variables=["target_key", "context"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     
@@ -232,8 +233,7 @@ def save_text_as_pdf(text, filename):
     c.save()
     buffer.seek(0)
     
-    with open(filename, "wb") as output_file:
-        output_file.write(buffer.getvalue())
+    return buffer.getvalue()
 
 def display_songs(conn, search_term=""):
     songs = get_all_songs(conn)
@@ -273,6 +273,15 @@ def display_songs(conn, search_term=""):
                         update_song_content(conn, selected_song, edited_content)
                         st.success("Contenido de la canción actualizado.")
                     
+                    # Botón para descargar la canción original en PDF
+                    pdf_content = save_text_as_pdf(edited_content, f"{selected_song}.pdf")
+                    st.download_button(
+                        label="Descargar canción original en PDF",
+                        data=pdf_content,
+                        file_name=f"{selected_song}.pdf",
+                        mime="application/pdf"
+                    )
+                    
                     # Cambiar tonalidad de la canción
                     st.subheader("Cambiar tonalidad de la canción")
                     target_key = st.selectbox("Selecciona la nueva tonalidad:", 
@@ -282,6 +291,15 @@ def display_songs(conn, search_term=""):
                             new_song_content = change_song_key(edited_content, target_key)
                             st.subheader(f"Canción en nueva tonalidad: {target_key}")
                             display_song_in_columns(new_song_content, "new_song_content")
+                            
+                            # Botón para descargar la nueva versión de la canción en PDF
+                            new_pdf_content = save_text_as_pdf(new_song_content, f"{selected_song}_{target_key}.pdf")
+                            st.download_button(
+                                label=f"Descargar canción en tonalidad {target_key} en PDF",
+                                data=new_pdf_content,
+                                file_name=f"{selected_song}_{target_key}.pdf",
+                                mime="application/pdf"
+                            )
                     
                     # Opción para eliminar la canción
                     if st.button(f"Eliminar '{selected_song}'"):
@@ -296,6 +314,7 @@ def display_songs(conn, search_term=""):
             st.info("No se encontraron canciones que coincidan con la búsqueda.")
     else:
         st.info("No hay canciones en la base de datos. Por favor, carga nuevas canciones primero.")
+
 # Función principal de la aplicación
 def main():
     st.set_page_config(page_title="Analizador de Canciones y Creador de Playlists", layout="wide")
