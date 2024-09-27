@@ -80,17 +80,23 @@ def get_docx_text(docx_file):
 # Función para procesar imagen y extraer texto
 def process_image_to_text(image_file):
     image = Image.open(image_file)
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content([
         "Lee la imagen, es una canción que va a tener sus respectivas notas en cifrado americano, donde 'C' es 'DO' y 'B' es 'SI'. Presta atención a palabras como 'INTRO' y lo que sigue porque eso indica dónde y cómo empieza la canción. Generalmente, el formato en que vas a ver las canciones es en dos columnas, de izquierda a derecha. Quiero la canción escrita tal cual la foto, sin agregados.",
         image
     ])
     return response.text
 
+def verificar_clave():
+    clave = st.text_input("Ingresa la palabra clave:", type="password")
+    return clave == "matusay"
+
 # Funciones para análisis de canciones y creación de playlists
 @lru_cache(maxsize=1)
 def get_song_analysis_chain():
     prompt_template = """
+    NO escribas un token hasta que no estes seguro que comprendas el las instrucciones de sistema qu te indique.
+    la peticion es:
     Analiza el contenido de esta canción y determina su tema principal.
     Proporciona un breve resumen del tema y el tono emocional de la canción.
 
@@ -99,7 +105,7 @@ def get_song_analysis_chain():
 
     Tema y análisis:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.3)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash",system_instructions="Eres experto en teologia y en composicion musical. Tienes una gran sensibilidad artistica para catalogar canciones y obras" ,temperature=0.4)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context"])
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
@@ -111,6 +117,9 @@ def analyze_song(content):
 @lru_cache(maxsize=1)
 def get_playlist_creation_chain():
     prompt_template = """
+    Detente, antes de escribir un solo token, concentrate en la siguiente instrucción:
+    (Tómate tu tiempo antes de responder. Antes de generar una respuesta, analiza completamente la consulta. No te apresures en generar tokens rápidamente; en su lugar, prioriza la calidad y precisión sobre la velocidad. Reflexiona sobre toda la información disponible y responde solo cuando estés seguro de haber comprendido y procesado correctamente la consulta. No importa si tardas un poco más en responder, lo importante es que la respuesta sea lo más eficiente y completa posible.)
+    Ahora si va la instrucción:
     Basándote en los temas de las canciones proporcionadas y el tema solicitado por el usuario, 
     crea una lista de 8 canciones coherente. Selecciona las canciones que mejor se ajusten al tema solicitado,
     priorizando aquellas que se han usado con menos frecuencia recientemente.
@@ -131,9 +140,9 @@ def get_playlist_creation_chain():
     """
 
     model = ChatGoogleGenerativeAI(
-        model="gemini-1.5-pro",
-        system_instructions="Eres un experto en música cristiana, del sector reformado, no católico. Crees en la soberanía de Dios, entiendes la Biblia como la palabra de Dios y crees en Jesús como el Hijo de Dios que murió en la Cruz y resucitó al tercer día. Entiendes que las canciones no deben divagar en su temática y tienes que poner La Palabra de Dios en lo más alto",
-        temperature=0.4
+        model="gemini-1.5-flash",
+        system_instructions="Eres un experto en música cristiana del ámbito reformado, no católico. Crees firmemente en la soberanía de Dios y en la Biblia como la infalible Palabra de Dios. Reconoces a Jesús como el Hijo de Dios, quien murió en la cruz y resucitó al tercer día. Tienes un entendimiento claro de que las canciones deben centrarse en temáticas bíblicas sin desviarse, y que la Palabra de Dios debe ser el eje central y más elevado en las letras de las canciones.",
+        temperature=0.5
     )
     prompt = PromptTemplate(template=prompt_template, input_variables=["user_theme", "context"])    
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
@@ -204,7 +213,7 @@ def change_song_key(content: str, target_key: str) -> str:
     Canción en la nueva tonalidad de {target_key}:
     """
     
-    model = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.2)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
     prompt = PromptTemplate(template=prompt_template, input_variables=["target_key", "context"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     
@@ -303,9 +312,13 @@ def display_songs(conn, search_term=""):
                     
                     # Opción para eliminar la canción
                     if st.button(f"Eliminar '{selected_song}'"):
-                        delete_song(conn, selected_song)
-                        st.success(f"La canción '{selected_song}' ha sido eliminada.")
-                        st.rerun()
+                        clave = st.text_input("Ingresa la palabra clave para eliminar:", type="password")
+                        if clave == "matusay":
+                            delete_song(conn, selected_song)
+                            st.success(f"La canción '{selected_song}' ha sido eliminada.")
+                            st.rerun()
+                        else:
+                            st.error("Palabra clave incorrecta. No se puede eliminar la canción.")
                 else:
                     st.warning("No se pudo cargar el contenido de la canción.")
             
@@ -314,7 +327,6 @@ def display_songs(conn, search_term=""):
             st.info("No se encontraron canciones que coincidan con la búsqueda.")
     else:
         st.info("No hay canciones en la base de datos. Por favor, carga nuevas canciones primero.")
-
 # Función principal de la aplicación
 def main():
     st.set_page_config(page_title="Analizador de Canciones y Creador de Playlists", layout="wide")
@@ -331,7 +343,7 @@ def main():
 
     conn = get_db_connection()
 
-    menu = ["Inicio", "Ver Canciones", "Cargar Nuevas Canciones", "Crear Playlist"]
+    menu = ["Inicio", "Ver Canciones", "Cargar Nuevas Canciones", "Crear Playlist", "Config"]
     choice = st.sidebar.selectbox("Menú", menu)
 
     if choice == "Inicio":
@@ -388,8 +400,36 @@ def main():
                         st.write("Playlist generada:", playlist)
                     else:
                         st.warning("Por favor, ingresa un tema para la playlist antes de generarla.")
+    elif choice == "Config":
+        if verificar_clave():
+            st.subheader("Configuración y Respaldo de Base de Datos")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("Descargar Base de Datos")
+                if st.button("Descargar DB"):
+                    with open('songs_database.db', 'rb') as f:
+                        bytes_data = f.read()
+                    st.download_button(
+                        label="Descargar songs_database.db",
+                        data=bytes_data,
+                        file_name="songs_database.db",
+                        mime="application/octet-stream"
+                    )
+            
+            with col2:
+                st.subheader("Cargar Base de Datos")
+                uploaded_file = st.file_uploader("Selecciona el archivo de base de datos", type=['db'])
+                if uploaded_file is not None:
+                    if st.button("Cargar DB"):
+                        with open('songs_database.db', 'wb') as f:
+                            f.write(uploaded_file.getbuffer())
+                        st.success("Base de datos cargada exitosamente. Reinicia la aplicación para ver los cambios.")
         else:
-            st.warning("No hay canciones en la base de datos. Por favor, carga nuevas canciones primero.")
+            st.error("Palabra clave incorrecta. Acceso denegado.")
+    else:
+        st.warning("No hay canciones en la base de datos. Por favor, carga nuevas canciones primero.")
 
 if __name__ == "__main__":
     main()
